@@ -1,39 +1,43 @@
+import gspread
 import os
-import requests
 import pandas as pd
 from datetime import datetime
+import requests
+from oauth2client.service_account import ServiceAccountCredentials
 
 def main():
-    # هذا الجزء يفترض أنك تستخدم مكتبة لربط Google Sheets
-    # (تأكد أن المتغيرات TOKEN و CHAT_ID معرفة في الـ Secrets)
+    # إعداد الاتصال
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
+    client = gspread.authorize(creds)
+    
+    # فتح ملف الإكسل (استبدل الاسم بالاسم الصحيح للملف)
+    sheet = client.open("HR_Data").worksheet("HR_Data")
+    
+    # --- السطر الناقص كان هنا ---
+    # تحويل بيانات جوجل شيت إلى DataFrame
+    data = sheet.get_all_records()
+    df = pd.DataFrame(data)
+    # ---------------------------
+    
     token = os.environ.get('TELEGRAM_TOKEN')
     chat_id = os.environ.get('CHAT_ID')
-    
-    # تحميل البيانات (استخدم الطريقة التي تعتمدها في سكربتك الحالي)
-    # هنا نفترض أنك تحمل البيانات في df (DataFrame)
-    # df = ... (كود الاتصال الخاص بك)
-    
     today = datetime.now()
     
     for index, row in df.iterrows():
         name = row['Name']
         raw_date = str(row['Expiry_Date']) 
         
-        # الذكاء هنا: الكود سيحاول فهم التاريخ بغض النظر عن تنسيقه
         try:
-            # محاولة قراءة التنسيق الحالي الذي أرسلته (MM-DD-YYYY)
             expiry_date = datetime.strptime(raw_date, "%m-%d-%Y")
-        except:
-            # إذا فشل، سيحاول تحويله تلقائياً لأي تنسيق تاريخ آخر
-            expiry_date = pd.to_datetime(raw_date)
+            diff_days = (expiry_date - today).days
             
-        diff_days = (expiry_date - today).days
-        
-        # التنبيه في حال كانت المدة 30 يوم أو أقل
-        if 0 <= diff_days <= 30:
-            message = f"⚠️ تنبيه: إقامة {name} تنتهي خلال {diff_days} يوم."
-            url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={message}"
-            requests.get(url)
+            if 0 <= diff_days <= 30:
+                message = f"⚠️ تنبيه: إقامة {name} تنتهي خلال {diff_days} يوم."
+                url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={message}"
+                requests.get(url)
+        except Exception as e:
+            print(f"Error: {e}")
 
 if __name__ == "__main__":
     main()
