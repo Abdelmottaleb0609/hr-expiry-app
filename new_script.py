@@ -1,35 +1,23 @@
-import pandas as pd
-from datetime import datetime
 import os
 import requests
+from datetime import datetime
+import pandas as pd
 
-def send_telegram_message(token, chat_id, message):
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    payload = {'chat_id': chat_id, 'text': message}
-    requests.post(url, data=payload)
-
-def process_hr_data():
-    # افترضنا أنك تقرأ ملف الإكسل أو CSV
-    df = pd.read_csv('your_data_file.csv') # استبدل باسم ملفك الفعلي
+# هذا الكود يقرأ من الشيت مباشرة دون تعديله
+def main():
+    # ... (كود الاتصال الخاص بك كما هو) ...
     
-    token = os.environ.get('TELEGRAM_TOKEN')
-    chat_id = os.environ.get('CHAT_ID')
-    
-    today = datetime.now()
-    
-    for index, row in df.iterrows():
-        name = row['Name']
-        # التعديل هنا: تحويل التاريخ من صيغة MM-DD-YYYY
-        try:
-            expiry_date = datetime.strptime(str(row['Expiry_Date']), "%m-%d-%Y")
-        except ValueError:
-            continue # تخطي الصف إذا كان التنسيق غير صحيح
-            
-        diff_days = (expiry_date - today).days
+    # عند قراءة البيانات:
+    for row in data:
+        # نقوم بتحويل التاريخ يدوياً في الكود ليفهم أي صيغة
+        raw_date = str(row['Expiry_Date']) 
         
-        if 0 <= diff_days <= 30:
-            message = f"⚠️ تنبيه هام: إقامة الموظف {name} تنتهي خلال {diff_days} يوم."
-            send_telegram_message(token, chat_id, message)
+        # الكود سيحاول قراءة التاريخ مهما كان التنسيق
+        try:
+            # محاولة قراءة الصيغة الجديدة
+            expiry_date = datetime.strptime(raw_date, "%m-%d-%Y")
+        except:
+            # إذا فشل، سيحاول قراءة الصيغ الأخرى تلقائياً
+            expiry_date = pd.to_datetime(raw_date)
 
-if __name__ == "__main__":
-    process_hr_data()
+        # باقي الكود للمقارنة وإرسال التنبيه...
