@@ -1,23 +1,39 @@
 import os
 import requests
-from datetime import datetime
 import pandas as pd
+from datetime import datetime
 
-# هذا الكود يقرأ من الشيت مباشرة دون تعديله
 def main():
-    # ... (كود الاتصال الخاص بك كما هو) ...
+    # هذا الجزء يفترض أنك تستخدم مكتبة لربط Google Sheets
+    # (تأكد أن المتغيرات TOKEN و CHAT_ID معرفة في الـ Secrets)
+    token = os.environ.get('TELEGRAM_TOKEN')
+    chat_id = os.environ.get('CHAT_ID')
     
-    # عند قراءة البيانات:
-    for row in data:
-        # نقوم بتحويل التاريخ يدوياً في الكود ليفهم أي صيغة
+    # تحميل البيانات (استخدم الطريقة التي تعتمدها في سكربتك الحالي)
+    # هنا نفترض أنك تحمل البيانات في df (DataFrame)
+    # df = ... (كود الاتصال الخاص بك)
+    
+    today = datetime.now()
+    
+    for index, row in df.iterrows():
+        name = row['Name']
         raw_date = str(row['Expiry_Date']) 
         
-        # الكود سيحاول قراءة التاريخ مهما كان التنسيق
+        # الذكاء هنا: الكود سيحاول فهم التاريخ بغض النظر عن تنسيقه
         try:
-            # محاولة قراءة الصيغة الجديدة
+            # محاولة قراءة التنسيق الحالي الذي أرسلته (MM-DD-YYYY)
             expiry_date = datetime.strptime(raw_date, "%m-%d-%Y")
         except:
-            # إذا فشل، سيحاول قراءة الصيغ الأخرى تلقائياً
+            # إذا فشل، سيحاول تحويله تلقائياً لأي تنسيق تاريخ آخر
             expiry_date = pd.to_datetime(raw_date)
+            
+        diff_days = (expiry_date - today).days
+        
+        # التنبيه في حال كانت المدة 30 يوم أو أقل
+        if 0 <= diff_days <= 30:
+            message = f"⚠️ تنبيه: إقامة {name} تنتهي خلال {diff_days} يوم."
+            url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={message}"
+            requests.get(url)
 
-        # باقي الكود للمقارنة وإرسال التنبيه...
+if __name__ == "__main__":
+    main()
