@@ -3,24 +3,23 @@ import requests
 import os
 from datetime import datetime
 
-# إعدادات الرابط (تم استبدال الرابط بـ CSV للقراءة المباشرة)
+# إعدادات الرابط
 SHEET_ID = '1gbzLldXubReVoFp9ngR96Tcjsr_Jxxqh2FD6z8CnXxY'
 URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv'
 
 def check_expiry():
-    # تحميل البيانات
+    # تحميل البيانات مع تحديد أن اليوم يأتي قبل الشهر
     df = pd.read_csv(URL)
     
-    # تحويل تاريخ الانتهاء لـ datetime
-    df['Expiry_Date'] = pd.to_datetime(df['Expiry_Date'])
+    # تحويل تاريخ الانتهاء لـ datetime مع تفعيل dayfirst=True
+    df['Expiry_Date'] = pd.to_datetime(df['Expiry_Date'], dayfirst=True)
     today = datetime.now()
     
     token = os.environ['TELEGRAM_TOKEN']
     chat_id = os.environ['TELEGRAM_CHAT_ID']
     
     for index, row in df.iterrows():
-        # إذا كانت الحالة "valid" أو أي شيء آخر، نقارن التاريخ
-        # نحسب الفرق بالأيام
+        # حساب الفرق بالأيام
         delta = (row['Expiry_Date'] - today).days
         
         # إذا بقيت 30 يوماً أو أقل، نرسل تنبيه
