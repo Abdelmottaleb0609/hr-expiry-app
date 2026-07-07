@@ -1,37 +1,29 @@
-import gspread
 import os
 import pandas as pd
 from datetime import datetime
 import requests
-from oauth2client.service_account import ServiceAccountCredentials
 
 def main():
-    # إعداد الاتصال
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
-    client = gspread.authorize(creds)
+    # الرابط المباشر للـ CSV المستخرج من ملفك
+    sheet_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT5qK-vFq_mJ3l0n88-F_9P4Bq8j2hK_N9s8u1E9yA6O2u7J5p-5oZJgOQ1Q8P_hY5CgOqA1P5m/pub?output=csv"
     
-    # فتح ملف الإكسل
-    sheet = client.open("HR_Data").worksheet("HR_Data")
-    data = sheet.get_all_records()
-    df = pd.DataFrame(data)
+    # تحميل البيانات
+    df = pd.read_csv(sheet_url)
     
-    # جلب المتغيرات من GitHub Secrets
     token = os.environ.get('TELEGRAM_TOKEN')
     chat_id = os.environ.get('TELEGRAM_CHAT_ID')
     today = datetime.now()
     
     for index, row in df.iterrows():
-        # اسم الأعمدة يجب أن يطابق تماماً عناوين الصف الأول في الشيت
-        name = str(row['Name'])
-        raw_date = str(row['Expiry_Date'])
-        
         try:
+            name = str(row['Name'])
             # تحويل التاريخ من صيغة MM-DD-YYYY
+            raw_date = str(row['Expiry_Date'])
             expiry_date = datetime.strptime(raw_date, "%m-%d-%Y")
+            
             diff_days = (expiry_date - today).days
             
-            # إرسال تنبيه إذا كانت المدة بين 0 و 30 يوم
+            # إرسال تنبيه إذا كانت الإقامة تنتهي خلال 30 يوم
             if 0 <= diff_days <= 30:
                 message = f"⚠️ تنبيه: إقامة الموظف {name} تنتهي خلال {diff_days} يوم."
                 url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={message}"
