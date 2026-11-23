@@ -29,8 +29,8 @@ def main():
         print(f"Error reading CSV: {e}")
         raise SystemExit(1)
 
-    # قراءة التاريخ بصيغة يوم/شهر/سنة (الأكثر شيوعاً عندنا)
-    df['Expiry_Date'] = pd.to_datetime(df['Expiry_Date'], errors='coerce', dayfirst=True)
+    # قراءة التاريخ بصيغة شهر/يوم/سنة (زي ما هو في الشيت)
+    df['Expiry_Date'] = pd.to_datetime(df['Expiry_Date'], errors='coerce')
 
     # الصفوف اللي تاريخها غلط: ما نحذفهاش بصمت، نبلغ عنها
     bad = df[df['Expiry_Date'].isna()]
